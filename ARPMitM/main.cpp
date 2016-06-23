@@ -1,6 +1,5 @@
 #include<iostream>
 #include<unistd.h>
-#include<pthread.h>
 #include<tins/tins.h>
 
 using namespace std;
@@ -13,15 +12,22 @@ typedef struct ThreadArgs{
 
 void *doArpSpoofing(void* args)
 {
-    THREADARGS &targ = (THREADARGS&)args;
+    THREADARGS *targ = (THREADARGS*)args;
+    PacketSender send;
+    EthernetII::address_type gw_hw,victim_hw;
 
-    return 0;
+    gw_hw = Utils::resolve_hwaddr(targ->iface,targ->gw,send);
+    victim_hw = Utils::resolve_hwaddr(targ->iface,targ->victim,send);
+
+    cout << "[*] Using Gateway HW Address   " << gw_hw << endl;
+    cout << "[*] Using Victim HW Address    " << victim_hw << endl;
+    cout << "[*] Using Own HW Address       " << targ->info.hw_addr << endl;
+    exit(0);
 }
 
 int main(int argc, char* argv[])
 {
-
-    pthread_t thread;
+    pid_t pid;
     IPv4Address gw, victim;
     if(argc != 3){
         cout << "[-] Usage " << argv[0] << " <Gateway> <Victim>" << endl;
@@ -45,14 +51,16 @@ int main(int argc, char* argv[])
         cout << "[!] " << e.what() << endl;
         return 3;
     }
+    cout << "[-] Starting ARP Spoofing..." << endl;
+    THREADARGS targ;
+    targ.iface = iface;
+    targ.gw = gw;
+    targ.victim = victim;
+    targ.info = info;
     try {
-        THREADARGS targ;
-        targ.iface = iface;
-        targ.gw = gw;
-        targ.victim = victim;
-        targ.info = info;
-        pthread_create(&thread,NULL,doArpSpoofing,(void*)&targ);
-        pthread_detach(thread);
+        pid = fork();
+        if(pid == 0)
+            doArpSpoofing((void*)&targ);
     }
     catch(runtime_error& e){
         cout << "[!] " << e.what() << endl;
