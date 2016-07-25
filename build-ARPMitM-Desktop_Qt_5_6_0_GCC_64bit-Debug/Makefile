@@ -48,8 +48,10 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = ../ARPMitM/main.cpp 
-OBJECTS       = main.o
+SOURCES       = ../ARPMitM/main.cpp \
+		../ARPMitM/arpspoofer.cpp 
+OBJECTS       = main.o \
+		arpspoofer.o
 DIST          = ../../../Qt/5.6/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../Qt/5.6/gcc_64/mkspecs/common/unix.conf \
 		../../../Qt/5.6/gcc_64/mkspecs/common/linux.conf \
@@ -178,7 +180,8 @@ DIST          = ../../../Qt/5.6/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../Qt/5.6/gcc_64/mkspecs/features/exceptions.prf \
 		../../../Qt/5.6/gcc_64/mkspecs/features/yacc.prf \
 		../../../Qt/5.6/gcc_64/mkspecs/features/lex.prf \
-		../ARPMitM/ARPMitM.pro  ../ARPMitM/main.cpp
+		../ARPMitM/ARPMitM.pro arpspoofer.h ../ARPMitM/main.cpp \
+		../ARPMitM/arpspoofer.cpp
 QMAKE_TARGET  = ARPMitM
 DESTDIR       = 
 TARGET        = ARPMitM
@@ -491,6 +494,9 @@ compiler_clean:
 
 main.o: ../ARPMitM/main.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../ARPMitM/main.cpp
+
+arpspoofer.o: ../ARPMitM/arpspoofer.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o arpspoofer.o ../ARPMitM/arpspoofer.cpp
 
 ####### Install
 
